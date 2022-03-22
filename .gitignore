@@ -1,0 +1,4 @@
+.env.rc
+website/public/*.json
+dist
+node_modules

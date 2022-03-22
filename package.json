@@ -1,0 +1,26 @@
+{
+  "name": "ci-duration",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "author": "Léo Anesi",
+  "license": "MIT",
+  "scripts": {
+    "calc": "yarn tsc && . ./.env.rc && node dist/index.js"
+  },
+  "dependencies": {
+    "axios": "^0.26.1",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.180",
+    "@types/node": "^14.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.16.0",
+    "@typescript-eslint/parser": "^5.16.0",
+    "eslint": "^8.11.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-prettier": "^4.0.0",
+    "prettier": "^2.6.0",
+    "typescript": "^4.6.2"
+  }
+}

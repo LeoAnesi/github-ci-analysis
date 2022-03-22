@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.9.0.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function (e) {
+        $.getJSON("public/transformedJobs.json", function (transformedJobs) {
+          const plotDatas = [];
+          Object.keys(transformedJobs).forEach((jobName) => {
+            let index = 0;
+            const trace = {
+              x: [],
+              y: [],
+              type: "scatter",
+              name: jobName,
+            };
+            const jobs = transformedJobs[jobName].sort(
+              (firstJob, secondJob) => {
+                return (
+                  new Date(firstJob.startedAt).getTime() -
+                  new Date(secondJob.startedAt).getTime()
+                );
+              }
+            );
+
+            while (index < jobs.length) {
+              const date = new Date(jobs[index].startedAt)
+                .toISOString()
+                .slice(0, 10);
+              const matchingJobs = jobs.filter(
+                (testStep) =>
+                  new Date(testStep.startedAt).toISOString().slice(0, 10) ===
+                  date
+              );
+              const sum = matchingJobs
+                .map((matchingJob) => matchingJob.duration)
+                .reduce(
+                  (firstJobDuration, secondJobDuration) =>
+                    firstJobDuration + secondJobDuration,
+                  0
+                );
+              const avg = sum / matchingJobs.length;
+              trace.x.push(date);
+              trace.y.push(avg);
+              index += matchingJobs.length;
+            }
+
+            plotDatas.push(trace);
+          });
+
+          const plotDiv = document.getElementById("jobs-plot-div");
+          Plotly.newPlot(plotDiv, plotDatas, {
+            margin: { t: 0 },
+          });
+        });
+      });
+    </script>
+    <script type="text/javascript">
+      $(document).ready(function (e) {
+        $.getJSON("public/transformedJobs.json", function (transformedJobs) {
+          const testStepsGroupedByName = _.groupBy(
+            _.flatten(
+              Object.values(transformedJobs).map((jobs) => {
+                return _.flatten(
+                  jobs.map((job) =>
+                    job.steps.map((step) => ({
+                      ...step,
+                      startedAt: job.startedAt,
+                    }))
+                  )
+                );
+              })
+            ).sort((firstStep, secondStep) => {
+              return (
+                new Date(firstStep.startedAt).getTime() -
+                new Date(secondStep.startedAt).getTime()
+              );
+            }),
+            "name"
+          );
+
+          const jobDetailsPlotData = Object.entries(testStepsGroupedByName).map(
+            ([key, value]) => {
+              let index = 0;
+              const jobDetailsPlotDataForGroup = {
+                x: [],
+                y: [],
+                type: "scatter",
+                name: key,
+              };
+
+              while (index < value.length) {
+                const date = new Date(value[index].startedAt)
+                  .toISOString()
+                  .slice(0, 10);
+                const matchingSteps = value.filter(
+                  (testStep) =>
+                    new Date(testStep.startedAt).toISOString().slice(0, 10) ===
+                    date
+                );
+                const sum = matchingSteps
+                  .map((matchingStep) => matchingStep.duration)
+                  .reduce((a, b) => a + b, 0);
+                const avg = sum / matchingSteps.length;
+                jobDetailsPlotDataForGroup.x.push(date);
+                jobDetailsPlotDataForGroup.y.push(avg);
+                index += matchingSteps.length;
+              }
+
+              return jobDetailsPlotDataForGroup;
+            }
+          );
+
+          const jobDetailsPlotDiv = document.getElementById("jobs-details-div");
+          Plotly.newPlot(jobDetailsPlotDiv, jobDetailsPlotData, {
+            margin: { t: 0 },
+          });
+        });
+      });
+    </script>
+    <script type="text/javascript">
+      $(document).ready(function (e) {
+        $.getJSON("public/transformedJobs.json", function (transformedJobs) {
+          const stackBarChartsDiv =
+            document.getElementById("stacked-bar-charts");
+
+          Object.keys(transformedJobs).forEach((jobGroupName) => {
+            const plotDiv = document.createElement("div");
+            plotDiv.style = "width: 1900px; height: 1000px";
+            stackBarChartsDiv.append(plotDiv);
+
+            const traces = {};
+            const generateEmptyTrace = (name) => ({
+              x: [],
+              y: [],
+              name,
+              type: "bar",
+            });
+            let date = "";
+            let index = 1;
+            transformedJobs[jobGroupName]
+              .sort((firstStep, secondStep) => {
+                return (
+                  new Date(firstStep.startedAt).getTime() -
+                  new Date(secondStep.startedAt).getTime()
+                );
+              })
+              .map((job) => {
+                const jobDate = new Date(job.startedAt)
+                  .toISOString()
+                  .slice(0, 10);
+                if (jobDate !== date) {
+                  date = jobDate;
+                  index = 1;
+                }
+                job.steps.forEach((step) => {
+                  if (traces[step.name] === undefined) {
+                    traces[step.name] = generateEmptyTrace(step.name);
+                  }
+
+                  traces[step.name].x.push(`${jobDate}-${index}`);
+                  traces[step.name].y.push(step.duration);
+                });
+
+                index++;
+              });
+
+            Plotly.newPlot(plotDiv, Object.values(traces), {
+              barmode: "stack",
+              title: {
+                text: jobGroupName,
+              },
+            });
+          });
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div id="jobs-plot-div" style="width: 1900px; height: 900px"></div>
+    <div id="jobs-details-div" style="width: 1900px; height: 900px"></div>
+    <div id="stacked-bar-charts" style="width: 1900px; height: 1000px"></div>
+  </body>
+</html>
