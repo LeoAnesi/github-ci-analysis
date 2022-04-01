@@ -104,7 +104,7 @@ const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
   return workflowRuns;
 };
 
-const getRunsFromWorkflows = async (newWorkflows?: Workflow[]) => {
+const getJobsFromWorkflows = async (newWorkflows?: Workflow[]) => {
   let workflowRuns =
     newWorkflows ??
     (JSON.parse(
@@ -166,9 +166,15 @@ const getRunsFromWorkflows = async (newWorkflows?: Workflow[]) => {
   );
 
   if (newWorkflows !== undefined) {
-    const previousJobs = JSON.parse(
-      await readFile("website/public/jobs.json", "utf-8")
-    ) as Job[];
+    let previousJobs: Job[] = [];
+
+    try {
+      previousJobs = JSON.parse(
+        await readFile("website/public/jobs.json", "utf-8")
+      ) as Job[];
+    } catch (e) {
+      console.log("No previously storred jobs found");
+    }
 
     jobs = [...previousJobs, ...jobs];
   }
@@ -215,7 +221,7 @@ const getGraphDataFromJobsData = async () => {
 
 const doAll = async () => {
   const newWorkflows = await getWorkflowsAndStoreThem();
-  await getRunsFromWorkflows(newWorkflows);
+  await getJobsFromWorkflows(newWorkflows);
   await getGraphDataFromJobsData();
 };
 
