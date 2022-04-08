@@ -1,6 +1,7 @@
 import axios from "axios";
 import { readFile, writeFile } from "fs/promises";
 import groupBy from "lodash/groupBy";
+import flatten from "lodash/flatten";
 
 interface Workflow {
   id: number;
@@ -61,7 +62,7 @@ const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
 
   try {
     previousWorkflowRuns = JSON.parse(
-      await readFile("website/public/workflows.json", "utf-8")
+      await readFile("frontend/src/graphsData/workflows.json", "utf-8")
     ) as Workflow[];
   } catch (e) {
     console.log("No previously storred workflows found");
@@ -95,7 +96,7 @@ const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
   } while (newData.length !== 0);
 
   await writeFile(
-    "website/public/workflows.json",
+    "frontend/src/graphsData/workflows.json",
     JSON.stringify(workflowRuns)
   );
 
@@ -108,7 +109,7 @@ const getJobsFromWorkflows = async (newWorkflows?: Workflow[]) => {
   let workflowRuns =
     newWorkflows ??
     (JSON.parse(
-      await readFile("website/public/workflows.json", "utf-8")
+      await readFile("frontend/src/graphsData/workflows.json", "utf-8")
     ) as Workflow[]);
 
   workflowRuns = workflowRuns.filter(
@@ -170,7 +171,7 @@ const getJobsFromWorkflows = async (newWorkflows?: Workflow[]) => {
 
     try {
       previousJobs = JSON.parse(
-        await readFile("website/public/jobs.json", "utf-8")
+        await readFile("frontend/src/graphsData/jobs.json", "utf-8")
       ) as Job[];
     } catch (e) {
       console.log("No previously storred jobs found");
@@ -179,7 +180,7 @@ const getJobsFromWorkflows = async (newWorkflows?: Workflow[]) => {
     jobs = [...previousJobs, ...jobs];
   }
 
-  await writeFile("website/public/jobs.json", JSON.stringify(jobs));
+  await writeFile("frontend/src/graphsData/jobs.json", JSON.stringify(jobs));
 
   console.log("jobs data is saved.");
 
@@ -188,29 +189,38 @@ const getJobsFromWorkflows = async (newWorkflows?: Workflow[]) => {
 
 const getGraphDataFromJobsData = async () => {
   const jobs = JSON.parse(
-    await readFile("website/public/jobs.json", "utf-8")
+    await readFile("frontend/src/graphsData/jobs.json", "utf-8")
   ) as Job[];
 
-  const transformedJobs = jobs.map((job) => ({
-    name: job.jobs[0].name,
-    startedAt: job.jobs[0].started_at,
-    duration:
-      (new Date(job.jobs[0].completed_at).getTime() -
-        new Date(job.jobs[0].started_at).getTime()) /
-      1000,
-    steps: job.jobs[0].steps.map((step) => ({
-      name: step.name,
-      number: step.number,
-      duration:
-        (new Date(step.completed_at).getTime() -
-          new Date(step.started_at).getTime()) /
-        1000,
-    })),
-    workflow: job.workflow,
-  }));
+  const transformedJobs = flatten(
+    jobs.map((job) =>
+      job.jobs.map((subJob) => {
+        return {
+          name: subJob.name,
+          startedAt: subJob.started_at,
+          duration:
+            (new Date(subJob.completed_at).getTime() -
+              new Date(subJob.started_at).getTime()) /
+            1000,
+          steps: subJob.steps.map((step) => ({
+            name: step.name,
+            number: step.number,
+            duration:
+              (new Date(step.completed_at).getTime() -
+                new Date(step.started_at).getTime()) /
+              1000,
+          })),
+          workflow: {
+            id: job.workflow.id,
+            name: `${job.workflow.name} - ${subJob.name}`,
+          },
+        };
+      })
+    )
+  );
 
   await writeFile(
-    "website/public/transformedJobs.json",
+    "frontend/src/graphsData/transformedJobs.json",
     JSON.stringify(groupBy(transformedJobs, "workflow.name"))
   );
 

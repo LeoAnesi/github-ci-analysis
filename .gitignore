@@ -1,4 +1,4 @@
 .env.rc
-website/public/*.json
+frontend/src/graphsData/*.json
 dist
 node_modules
