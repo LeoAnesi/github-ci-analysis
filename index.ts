@@ -36,11 +36,14 @@ const areEnvironementVariableCorrectlySet = (
   GITHUB_OWNER: string;
   GITHUB_REPO: string;
   GITHUB_PERSONAL_TOKEN: string;
+  MAX_NUMBER_OF_NEW_WORKFLOWS: string;
 } => {
   return (
     typeof env.GITHUB_OWNER === "string" &&
     typeof env.GITHUB_REPO === "string" &&
-    typeof env.GITHUB_PERSONAL_TOKEN === "string"
+    typeof env.GITHUB_PERSONAL_TOKEN === "string" &&
+    typeof env.MAX_NUMBER_OF_NEW_WORKFLOWS === "string" &&
+    !isNaN(parseInt(env.MAX_NUMBER_OF_NEW_WORKFLOWS))
   );
 };
 
@@ -52,6 +55,9 @@ const GITHUB_BASE_URL = `https://api.github.com/repos/${process.env.GITHUB_OWNER
 const DEFAULT_HEADERS = {
   Authorization: `token ${process.env.GITHUB_PERSONAL_TOKEN}`,
 };
+const MAX_NUMBER_OF_NEW_WORKFLOWS = parseInt(
+  process.env.MAX_NUMBER_OF_NEW_WORKFLOWS
+);
 
 const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -72,7 +78,7 @@ const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
     (previousWorkflowRun) => previousWorkflowRun.id
   );
 
-  let workflowRuns: Workflow[] = previousWorkflowRuns;
+  let workflowRuns: Workflow[] = [];
   let newData: Workflow[] = [];
   let index = 1;
   do {
@@ -93,7 +99,12 @@ const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
     );
     workflowRuns = workflowRuns.concat(newData);
     index++;
-  } while (newData.length !== 0);
+  } while (
+    newData.length !== 0 &&
+    workflowRuns.length < MAX_NUMBER_OF_NEW_WORKFLOWS
+  );
+
+  workflowRuns = previousWorkflowRuns.concat(workflowRuns);
 
   await writeFile(
     "frontend/src/graphsData/workflows.json",
