@@ -9,6 +9,7 @@ interface Workflow {
   status: string;
   conclusion: string;
   name: string;
+  created_at: string;
 }
 
 interface Job {
@@ -127,9 +128,9 @@ const getWorkflowsAndStoreThem = async (
   );
 
   if (saveCSV) {
-    const CSV_HEADER = "id, jobs_url, status, conclusion, name\n";
+    const CSV_HEADER = "id, jobs_url, status, conclusion, name, created_at\n";
     const csvContent = workflowRuns.reduce((content, workflow) => {
-      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${workflow.conclusion}, ${workflow.name}\n`;
+      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${workflow.conclusion}, ${workflow.name}, ${workflow.created_at}\n`;
 
       return content + line;
     }, CSV_HEADER);
