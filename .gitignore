@@ -2,3 +2,4 @@
 frontend/src/graphsData/*.json
 dist
 node_modules
+csvOutputs/*.csv

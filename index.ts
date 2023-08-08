@@ -76,7 +76,9 @@ const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
-const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
+const getWorkflowsAndStoreThem = async (
+  saveCSV: boolean
+): Promise<Workflow[]> => {
   let previousWorkflowRuns: Workflow[] = [];
 
   try {
@@ -123,6 +125,16 @@ const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
     "frontend/src/graphsData/workflows.json",
     JSON.stringify(workflowRuns)
   );
+
+  if (saveCSV) {
+    const CSV_HEADER = "id, jobs_url, status, conclusion, name\n";
+    const csvContent = workflowRuns.reduce((content, workflow) => {
+      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${workflow.conclusion}, ${workflow.name}\n`;
+
+      return content + line;
+    }, CSV_HEADER);
+    await writeFile("csvOutputs/workflows.csv", csvContent);
+  }
 
   console.log("workflows data is saved.");
 
@@ -255,6 +267,7 @@ const getGraphDataFromJobsData = async () => {
 
 const doAll = async () => {
   const { saveCsv } = getScriptParameters();
+  const newWorkflows = await getWorkflowsAndStoreThem(saveCsv);
   await getJobsFromWorkflows(newWorkflows);
   await getGraphDataFromJobsData();
 };
