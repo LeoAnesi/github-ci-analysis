@@ -5,7 +5,8 @@
   "author": "Léo Anesi",
   "license": "MIT",
   "scripts": {
-    "calc": "yarn tsc && . ./.env.rc && node dist/index.js"
+    "calc": "yarn tsc && . ./.env.rc && node dist/index.js",
+    "csv": "yarn tsc && . ./.env.rc && node dist/index.js --save-csv"
   },
   "dependencies": {
     "axios": "^0.26.1",

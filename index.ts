@@ -30,6 +30,10 @@ interface Job {
   }[];
 }
 
+interface ScriptParameters {
+  saveCsv: boolean;
+}
+
 const areEnvironementVariableCorrectlySet = (
   env: Record<string, unknown>
 ): env is {
@@ -58,6 +62,15 @@ const DEFAULT_HEADERS = {
 const MAX_NUMBER_OF_NEW_WORKFLOWS = parseInt(
   process.env.MAX_NUMBER_OF_NEW_WORKFLOWS
 );
+
+const getScriptParameters = (): ScriptParameters => {
+  const args = process.argv;
+  const saveCsv = args.findIndex((argument) => argument === "--save-csv") >= 0;
+
+  return {
+    saveCsv,
+  };
+};
 
 const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -241,7 +254,7 @@ const getGraphDataFromJobsData = async () => {
 };
 
 const doAll = async () => {
-  const newWorkflows = await getWorkflowsAndStoreThem();
+  const { saveCsv } = getScriptParameters();
   await getJobsFromWorkflows(newWorkflows);
   await getGraphDataFromJobsData();
 };
