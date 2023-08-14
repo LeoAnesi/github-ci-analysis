@@ -19,6 +19,7 @@ interface Job {
     name: string;
   };
   jobs: {
+    id: number;
     started_at: string;
     completed_at: string;
     name: string;
@@ -87,7 +88,7 @@ const getWorkflowsAndStoreThem = async (
       await readFile("frontend/src/graphsData/workflows.json", "utf-8")
     ) as Workflow[];
   } catch (e) {
-    console.log("No previously storred workflows found");
+    console.log("No previously stored workflows found");
   }
 
   const previousWorkflowRunsIds = previousWorkflowRuns.map(
@@ -224,7 +225,7 @@ const getJobsFromWorkflows = async (
 
   if (saveCsv === true) {
     const CSV_HEADER =
-      "workflow_id, workflow_name, workflow_job_count, name, started_at, completed_at\n";
+      "job_id, workflow_id, workflow_name, workflow_job_count, name, started_at, completed_at\n";
     const fullContent = jobs.reduce((content, workflowJobs) => {
       const workflowId = workflowJobs.workflow.id;
       const workflowName = workflowJobs.workflow.name;
