@@ -65,6 +65,20 @@ const MAX_NUMBER_OF_NEW_WORKFLOWS = parseInt(
   process.env.MAX_NUMBER_OF_NEW_WORKFLOWS
 );
 
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const timeFormat = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+const formatCSVDate = (date: Date): string => {
+  return `${dateFormat.format(date)} ${timeFormat.format(date)}`;
+};
+
 const getScriptParameters = (): ScriptParameters => {
   const args = process.argv;
   const saveCsv = args.findIndex((argument) => argument === "--save-csv") >= 0;
@@ -131,7 +145,9 @@ const getWorkflowsAndStoreThem = async (
   if (saveCSV) {
     const CSV_HEADER = "id, jobs_url, status, conclusion, name, created_at\n";
     const csvContent = workflowRuns.reduce((content, workflow) => {
-      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${workflow.conclusion}, ${workflow.name}, ${workflow.created_at}\n`;
+      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${
+        workflow.conclusion
+      }, ${workflow.name}, ${formatCSVDate(new Date(workflow.created_at))}\n`;
 
       return content + line;
     }, CSV_HEADER);
@@ -232,7 +248,13 @@ const getJobsFromWorkflows = async (
       const workflowJobCount = workflowJobs.total_count;
       const workflowJobsContent = workflowJobs.jobs.reduce(
         (jobContent, job) => {
-          const line = `${workflowId}, ${workflowName}, ${workflowJobCount}, ${job.name}, ${job.started_at}, ${job.completed_at}\n`;
+          const line = `${
+            job.id
+          }, ${workflowId}, ${workflowName}, ${workflowJobCount}, ${
+            job.name
+          }, ${formatCSVDate(new Date(job.started_at))}, ${formatCSVDate(
+            new Date(job.completed_at)
+          )}\n`;
 
           return jobContent + line;
         },
