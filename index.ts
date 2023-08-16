@@ -9,6 +9,7 @@ interface Workflow {
   status: string;
   conclusion: string;
   name: string;
+  created_at: string;
 }
 
 interface Job {
@@ -28,6 +29,10 @@ interface Job {
       completed_at: string;
     }[];
   }[];
+}
+
+interface ScriptParameters {
+  saveCsv: boolean;
 }
 
 const areEnvironementVariableCorrectlySet = (
@@ -59,11 +64,22 @@ const MAX_NUMBER_OF_NEW_WORKFLOWS = parseInt(
   process.env.MAX_NUMBER_OF_NEW_WORKFLOWS
 );
 
+const getScriptParameters = (): ScriptParameters => {
+  const args = process.argv;
+  const saveCsv = args.findIndex((argument) => argument === "--save-csv") >= 0;
+
+  return {
+    saveCsv,
+  };
+};
+
 const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
-const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
+const getWorkflowsAndStoreThem = async (
+  saveCSV: boolean
+): Promise<Workflow[]> => {
   let previousWorkflowRuns: Workflow[] = [];
 
   try {
@@ -111,12 +127,25 @@ const getWorkflowsAndStoreThem = async (): Promise<Workflow[]> => {
     JSON.stringify(workflowRuns)
   );
 
+  if (saveCSV) {
+    const CSV_HEADER = "id, jobs_url, status, conclusion, name, created_at\n";
+    const csvContent = workflowRuns.reduce((content, workflow) => {
+      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${workflow.conclusion}, ${workflow.name}, ${workflow.created_at}\n`;
+
+      return content + line;
+    }, CSV_HEADER);
+    await writeFile("csvOutputs/workflows.csv", csvContent);
+  }
+
   console.log("workflows data is saved.");
 
   return workflowRuns;
 };
 
-const getJobsFromWorkflows = async (newWorkflows?: Workflow[]) => {
+const getJobsFromWorkflows = async (
+  newWorkflows?: Workflow[],
+  saveCsv?: boolean
+) => {
   let workflowRuns =
     newWorkflows ??
     (JSON.parse(
@@ -193,6 +222,27 @@ const getJobsFromWorkflows = async (newWorkflows?: Workflow[]) => {
 
   await writeFile("frontend/src/graphsData/jobs.json", JSON.stringify(jobs));
 
+  if (saveCsv === true) {
+    const CSV_HEADER =
+      "workflow_id, workflow_name, workflow_job_count, name, started_at, completed_at\n";
+    const fullContent = jobs.reduce((content, workflowJobs) => {
+      const workflowId = workflowJobs.workflow.id;
+      const workflowName = workflowJobs.workflow.name;
+      const workflowJobCount = workflowJobs.total_count;
+      const workflowJobsContent = workflowJobs.jobs.reduce(
+        (jobContent, job) => {
+          const line = `${workflowId}, ${workflowName}, ${workflowJobCount}, ${job.name}, ${job.started_at}, ${job.completed_at}\n`;
+
+          return jobContent + line;
+        },
+        ""
+      );
+
+      return content + workflowJobsContent;
+    }, CSV_HEADER);
+    await writeFile("csvOutputs/jobs.csv", fullContent);
+  }
+
   console.log("jobs data is saved.");
 
   return jobs;
@@ -241,8 +291,9 @@ const getGraphDataFromJobsData = async () => {
 };
 
 const doAll = async () => {
-  const newWorkflows = await getWorkflowsAndStoreThem();
-  await getJobsFromWorkflows(newWorkflows);
+  const { saveCsv } = getScriptParameters();
+  const newWorkflows = await getWorkflowsAndStoreThem(saveCsv);
+  await getJobsFromWorkflows(newWorkflows, saveCsv);
   await getGraphDataFromJobsData();
 };
 
