@@ -19,6 +19,7 @@ interface Job {
     name: string;
   };
   jobs: {
+    id: number;
     started_at: string;
     completed_at: string;
     name: string;
@@ -64,6 +65,20 @@ const MAX_NUMBER_OF_NEW_WORKFLOWS = parseInt(
   process.env.MAX_NUMBER_OF_NEW_WORKFLOWS
 );
 
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const timeFormat = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+const formatCSVDate = (date: Date): string => {
+  return `${dateFormat.format(date)} ${timeFormat.format(date)}`;
+};
+
 const getScriptParameters = (): ScriptParameters => {
   const args = process.argv;
   const saveCsv = args.findIndex((argument) => argument === "--save-csv") >= 0;
@@ -87,7 +102,7 @@ const getWorkflowsAndStoreThem = async (
       await readFile("frontend/src/graphsData/workflows.json", "utf-8")
     ) as Workflow[];
   } catch (e) {
-    console.log("No previously storred workflows found");
+    console.log("No previously stored workflows found");
   }
 
   const previousWorkflowRunsIds = previousWorkflowRuns.map(
@@ -130,7 +145,9 @@ const getWorkflowsAndStoreThem = async (
   if (saveCSV) {
     const CSV_HEADER = "id, jobs_url, status, conclusion, name, created_at\n";
     const csvContent = workflowRuns.reduce((content, workflow) => {
-      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${workflow.conclusion}, ${workflow.name}, ${workflow.created_at}\n`;
+      const line = `${workflow.id}, ${workflow.jobs_url}, ${workflow.status}, ${
+        workflow.conclusion
+      }, ${workflow.name}, ${formatCSVDate(new Date(workflow.created_at))}\n`;
 
       return content + line;
     }, CSV_HEADER);
@@ -224,14 +241,20 @@ const getJobsFromWorkflows = async (
 
   if (saveCsv === true) {
     const CSV_HEADER =
-      "workflow_id, workflow_name, workflow_job_count, name, started_at, completed_at\n";
+      "job_id, workflow_id, workflow_name, workflow_job_count, name, started_at, completed_at\n";
     const fullContent = jobs.reduce((content, workflowJobs) => {
       const workflowId = workflowJobs.workflow.id;
       const workflowName = workflowJobs.workflow.name;
       const workflowJobCount = workflowJobs.total_count;
       const workflowJobsContent = workflowJobs.jobs.reduce(
         (jobContent, job) => {
-          const line = `${workflowId}, ${workflowName}, ${workflowJobCount}, ${job.name}, ${job.started_at}, ${job.completed_at}\n`;
+          const line = `${
+            job.id
+          }, ${workflowId}, ${workflowName}, ${workflowJobCount}, ${
+            job.name
+          }, ${formatCSVDate(new Date(job.started_at))}, ${formatCSVDate(
+            new Date(job.completed_at)
+          )}\n`;
 
           return jobContent + line;
         },
