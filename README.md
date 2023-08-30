@@ -10,3 +10,5 @@ Run `yarn install`
 - Once the calculation is finished you can go in frontend folder and
 - `yarn install && yarn dev`
 - Go to the address provided by vite and TADA !
+
+If you want to use the CSV export to make your own analysis, you can use this [google sheet template](https://docs.google.com/spreadsheets/d/1DeCE3kNkF2e_hpX67EYp0tB8GiAKgmKbLicC4ueDwIU)
